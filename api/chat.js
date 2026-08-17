@@ -23,17 +23,15 @@ export default async function handler(req, res) {
     }
 
     const response = await fetch(
-      "https://openrouter.ai/api/v1/chat/completions",
+      "https://api.groq.com/openai/v1/chat/completions",
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
-          "HTTP-Referer": "https://jarvis-ai-blond-mu.vercel.app",
-          "X-Title": "JARVIS AI"
+          "Authorization": `Bearer ${process.env.GROQ_API_KEY}`
         },
         body: JSON.stringify({
-          model: "openrouter/free",
+          model: "llama-3.3-70b-versatile",
           messages: [
             {
               role: "system",
@@ -55,7 +53,7 @@ export default async function handler(req, res) {
 
     if (!response.ok) {
       return res.status(response.status).json({
-        error: data.error?.message || "Chyba OpenRouter."
+        error: data.error?.message || "Chyba Groq."
       });
     }
 
