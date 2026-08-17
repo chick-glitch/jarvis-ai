@@ -23,21 +23,30 @@ export default async function handler(req, res) {
     }
 
     const response = await fetch(
-      "https://api.openai.com/v1/responses",
+      "https://openrouter.ai/api/v1/chat/completions",
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization":
-            `Bearer ${process.env.OPENAI_API_KEY}`
+          "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
+          "HTTP-Referer": "https://jarvis-ai-blond-mu.vercel.app",
+          "X-Title": "JARVIS AI"
         },
         body: JSON.stringify({
-          model: "gpt-5.6",
-          instructions:
-            "Jsi JARVIS, osobní AI asistent. " +
-            "Odpovídej přirozeně a profesionálně. " +
-            "Rozumíš mnoha jazykům a odpovídej ve stejném jazyce jako uživatel.",
-          input: message
+          model: "openrouter/free",
+          messages: [
+            {
+              role: "system",
+              content:
+                "Jsi JARVIS, osobní AI asistent. " +
+                "Odpovídej přirozeně a profesionálně. " +
+                "Odpovídej ve stejném jazyce jako uživatel."
+            },
+            {
+              role: "user",
+              content: message
+            }
+          ]
         })
       }
     );
@@ -46,12 +55,12 @@ export default async function handler(req, res) {
 
     if (!response.ok) {
       return res.status(response.status).json({
-        error: data.error?.message || "Chyba OpenAI."
+        error: data.error?.message || "Chyba OpenRouter."
       });
     }
 
     return res.status(200).json({
-      answer: data.output_text
+      answer: data.choices?.[0]?.message?.content || "JARVIS nemá odpověď."
     });
 
   } catch (error) {
@@ -59,4 +68,4 @@ export default async function handler(req, res) {
       error: "Chyba serveru."
     });
   }
-        }
+}
