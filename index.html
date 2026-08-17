@@ -4,12 +4,164 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>J.A.R.V.I.S.</title>
+
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #05070a;
+      color: #00d9ff;
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .jarvis {
+      width: min(90%, 500px);
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 42px;
+      letter-spacing: 6px;
+      margin-bottom: 10px;
+    }
+
+    #status {
+      color: #7deaff;
+      margin-bottom: 30px;
+    }
+
+    #answer {
+      min-height: 80px;
+      margin: 20px 0;
+      padding: 20px;
+      border: 1px solid #00d9ff;
+      border-radius: 15px;
+      background: #071117;
+      text-align: left;
+    }
+
+    button {
+      border: 1px solid #00d9ff;
+      background: #071117;
+      color: #00d9ff;
+      padding: 15px 25px;
+      border-radius: 30px;
+      font-size: 18px;
+      cursor: pointer;
+    }
+
+    button:active {
+      transform: scale(0.96);
+    }
+
+    #mic {
+      font-size: 28px;
+      margin-right: 8px;
+    }
+  </style>
 </head>
 
 <body>
 
-  <h1>J.A.R.V.I.S.</h1>
-  <p>JARVIS je online.</p>
+  <div class="jarvis">
+    <h1>J.A.R.V.I.S.</h1>
+
+    <p id="status">JARVIS je online.</p>
+
+    <div id="answer">
+      Stiskni mikrofon a promluv.
+    </div>
+
+    <button id="mic">
+      🎙️ Mluvit
+    </button>
+  </div>
+
+  <script>
+    const button = document.getElementById("mic");
+    const status = document.getElementById("status");
+    const answer = document.getElementById("answer");
+
+    const SpeechRecognition =
+      window.SpeechRecognition ||
+      window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      status.textContent =
+        "Tento prohlížeč nepodporuje rozpoznávání hlasu.";
+    } else {
+
+      const recognition = new SpeechRecognition();
+
+      recognition.lang = "cs-CZ";
+      recognition.continuous = false;
+      recognition.interimResults = false;
+
+      button.addEventListener("click", () => {
+        status.textContent = "🎙️ Poslouchám...";
+        recognition.start();
+      });
+
+      recognition.onresult = async (event) => {
+        const message =
+          event.results[0][0].transcript;
+
+        answer.textContent = "Ty: " + message;
+        status.textContent = "🤖 JARVIS přemýšlí...";
+
+        try {
+          const response = await fetch("/api/chat", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              message: message
+            })
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.error || "Chyba serveru.");
+          }
+
+          answer.textContent = data.answer;
+          status.textContent = "JARVIS je online.";
+
+          const speech =
+            new SpeechSynthesisUtterance(data.answer);
+
+          speech.lang = "cs-CZ";
+          speech.rate = 1;
+          speech.pitch = 1;
+
+          window.speechSynthesis.cancel();
+          window.speechSynthesis.speak(speech);
+
+        } catch (error) {
+          answer.textContent =
+            "Chyba: " + error.message;
+
+          status.textContent = "JARVIS má problém s připojením.";
+        }
+      };
+
+      recognition.onerror = () => {
+        status.textContent =
+          "Nepodařilo se rozpoznat hlas.";
+      };
+
+      recognition.onend = () => {
+        if (status.textContent === "🎙️ Poslouchám...") {
+          status.textContent = "JARVIS je online.";
+        }
+      };
+    }
+  </script>
 
 </body>
 </html>
